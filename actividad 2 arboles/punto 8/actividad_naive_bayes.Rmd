@@ -1,0 +1,156 @@
+---
+title: "Actividad Naive Bayes FCI"
+author: "Gabriel Ernesto Gonzalez Palomo, 
+Carlos Rafael Mendez Gonzalez, 
+Rosendo Maximiliano Rodriguez Alvarado"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Actividad: Naive Bayes
+
+## Introducción
+
+En esta actividad se aplica el algoritmo Naive Bayes para clasificar el rendimiento académico de estudiantes de la FCI.
+
+La variable objetivo es `Rendimiento`.
+
+Las variables predictoras son:
+
+- TiempoEstudio
+- Asistencia
+- Participacion
+- SituacionEcon
+
+## Cargar librerías
+
+```{r}
+library(e1071)
+```
+
+## Crear conjunto de datos
+
+```{r}
+datos <- data.frame(
+  TiempoEstudio = c(
+    "Alto", "Medio", "Bajo", "Alto", "Medio",
+    "Alto", "Bajo", "Medio", "Alto", "Bajo",
+    "Medio", "Alto", "Bajo", "Medio", "Alto",
+    "Bajo", "Medio", "Alto", "Bajo", "Medio"
+  ),
+  Asistencia = c(
+    "Alta", "Media", "Baja", "Alta", "Media",
+    "Alta", "Baja", "Alta", "Media", "Baja",
+    "Media", "Alta", "Baja", "Media", "Alta",
+    "Media", "Alta", "Alta", "Baja", "Media"
+  ),
+  Participacion = c(
+    "Alta", "Baja", "Baja", "Media", "Media",
+    "Alta", "Baja", "Media", "Alta", "Media",
+    "Baja", "Alta", "Baja", "Media", "Alta",
+    "Media", "Alta", "Media", "Baja", "Media"
+  ),
+  SituacionEcon = c(
+    "Buena", "Mala", "Mala", "Buena", "Buena",
+    "Buena", "Mala", "Buena", "Buena", "Mala",
+    "Mala", "Buena", "Mala", "Buena", "Buena",
+    "Mala", "Buena", "Buena", "Mala", "Mala"
+  ),
+  Rendimiento = c(
+    "Excelente", "Regular", "Deficiente", "Bueno", "Bueno",
+    "Excelente", "Deficiente", "Bueno", "Excelente", "Regular",
+    "Regular", "Excelente", "Deficiente", "Bueno", "Excelente",
+    "Regular", "Bueno", "Excelente", "Deficiente", "Regular"
+  )
+)
+
+datos
+```
+
+## Convertir variables a factor
+
+```{r}
+datos$TiempoEstudio <- as.factor(datos$TiempoEstudio)
+datos$Asistencia <- as.factor(datos$Asistencia)
+datos$Participacion <- as.factor(datos$Participacion)
+datos$SituacionEcon <- as.factor(datos$SituacionEcon)
+datos$Rendimiento <- as.factor(datos$Rendimiento)
+
+str(datos)
+```
+
+## Dividir los datos en entrenamiento y prueba
+
+Se utiliza el 80% de los datos para entrenamiento y el 20% para prueba.
+
+```{r}
+set.seed(123)
+
+total_datos <- nrow(datos)
+
+indices_entrenamiento <- sample(
+  1:total_datos,
+  size = 0.8 * total_datos
+)
+
+datos_entrenamiento <- datos[indices_entrenamiento, ]
+datos_prueba <- datos[-indices_entrenamiento, ]
+
+datos_entrenamiento
+datos_prueba
+```
+
+## Entrenar modelo Naive Bayes
+
+```{r}
+modelo_nb <- naiveBayes(
+  Rendimiento ~ TiempoEstudio + Asistencia + Participacion + SituacionEcon,
+  data = datos_entrenamiento,
+  laplace = 1
+)
+
+modelo_nb
+```
+
+## Realizar predicciones
+
+```{r}
+predicciones <- predict(modelo_nb, datos_prueba)
+
+resultado <- data.frame(
+  Real = datos_prueba$Rendimiento,
+  Predicho = predicciones
+)
+
+resultado
+```
+
+## Matriz de confusión
+
+```{r}
+matriz_confusion <- table(
+  Real = datos_prueba$Rendimiento,
+  Predicho = predicciones
+)
+
+matriz_confusion
+```
+
+## Exactitud del modelo
+
+```{r}
+exactitud <- sum(diag(matriz_confusion)) / sum(matriz_confusion)
+
+exactitud
+```
+
+## Conclusión
+
+En esta actividad se aplicó el algoritmo Naive Bayes para clasificar el rendimiento académico de estudiantes de la FCI.
+
+Se utilizó un conjunto de datos con 20 estudiantes. Las variables utilizadas fueron tiempo de estudio, asistencia, participación y situación económica. La variable objetivo fue el rendimiento académico.
+
+El conjunto de datos se dividió en 80% para entrenamiento y 20% para prueba. Posteriormente se entrenó el modelo Naive Bayes y se evaluó mediante una matriz de confusión.
+
+Debido a que el conjunto de datos es pequeño, los resultados pueden variar dependiendo de qué registros queden en entrenamiento y cuáles en prueba. Sin embargo, el ejercicio permite observar el funcionamiento básico del algoritmo Naive Bayes en un problema de clasificación.
+```
