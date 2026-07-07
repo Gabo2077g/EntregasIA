@@ -1,0 +1,312 @@
+---
+title: "Clasificador Naive Bayes aplicado al conjunto de datos Iris"
+author:
+  - "Rosendo Maximiliano Rodríguez Alvarado"
+  - "Carlos Rafael Méndez González"
+  - "Gabriel Ernesto González Palomo"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+lang: es
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Portada {.unnumbered}
+
+**Universidad Autónoma del Carmen (UNACAR)**
+
+**Reporte: Clasificador Naive Bayes aplicado al conjunto de datos Iris**
+
+**Materia:** [Programación Avanzada]
+
+**Alumno:** [Rosendo Maximiliano Rodriguez Alvarado. Carlos Rafael Mendez Gonzalez. Gabriel Ernesto Gonzalez Palomo]
+
+**Profesor:** Jesús Alejandro Flores Hernández
+
+**Fecha:** `r format(Sys.Date(), "%d de %B de %Y")`
+
+\newpage
+
+# 1. Introducción
+
+La clasificación supervisada es una de las tareas más comunes dentro del aprendizaje automático. Consiste en asignar una **clase** o **etiqueta** a un nuevo registro a partir de un conjunto de **características** o **atributos**, apoyándose en un modelo previamente entrenado con datos ya clasificados.
+
+Entre los distintos algoritmos de clasificación existentes, el clasificador **Naive Bayes** destaca por su simplicidad, eficiencia computacional y buen desempeño en muchos problemas reales, a pesar de basarse en un supuesto de independencia entre variables que rara vez se cumple estrictamente en la práctica (de ahí el calificativo de "ingenuo" o *naive*).
+
+En el presente reporte se explica el fundamento matemático del clasificador Naive Bayes, basado en el Teorema de Bayes, y se muestra su aplicación práctica en el lenguaje **R** utilizando el conjunto de datos **Iris**, uno de los conjuntos de datos más utilizados como referencia en problemas de clasificación.
+
+# 2. Objetivos
+
+**Objetivo general**
+
+Aplicar el clasificador Naive Bayes, mediante el lenguaje R, para predecir la especie de una flor del conjunto de datos Iris a partir de sus características morfológicas.
+
+**Objetivos específicos**
+
+- Explicar el fundamento teórico del Teorema de Bayes y su extensión al clasificador Naive Bayes.
+- Describir el supuesto de independencia condicional y su papel dentro del algoritmo.
+- Implementar el algoritmo en R utilizando el paquete `e1071`.
+- Evaluar el desempeño del modelo mediante una matriz de confusión y el cálculo de su exactitud (*accuracy*).
+- Realizar predicciones sobre observaciones nuevas, incluyendo sus probabilidades asociadas.
+
+# 3. Fundamento teórico
+
+## 3.1 Teorema de Bayes
+
+El Teorema de Bayes describe la probabilidad de un evento $A$ condicionado a la ocurrencia de un evento $B$, en función de la probabilidad inversa $P(B|A)$:
+
+$$P(A|B) = \frac{P(A) \cdot P(B|A)}{P(B)}$$
+
+Este teorema permite "invertir" probabilidades condicionales: partiendo de qué tan probable es observar la evidencia $B$ dado que ocurrió $A$, se puede calcular qué tan probable es $A$ dado que se observó $B$. Esta idea es la base de todos los clasificadores bayesianos.
+
+## 3.2 Clasificador Naive Bayes
+
+Un **clasificador** es un método de aprendizaje supervisado que, a partir de un conjunto de entrenamiento con $N$ registros ya etiquetados, aprende a determinar la clase $c$ más probable para un nuevo registro, dado un vector de características $x_1, x_2, \dots, x_n$.
+
+Aplicando el Teorema de Bayes a este problema, la probabilidad de que un registro pertenezca a la clase $c$ dado su vector de atributos es:
+
+$$P(c \mid x_1, \dots, x_n) = \frac{P(c) \cdot P(x_1, \dots, x_n \mid c)}{P(x_1, \dots, x_n)}$$
+
+El término $P(x_1,\dots,x_n\mid c)$ es, en general, muy difícil de estimar directamente, ya que requeriría conocer la distribución conjunta de todas las variables para cada clase.
+
+## 3.3 Supuesto de independencia
+
+Para resolver el problema anterior, Naive Bayes introduce el supuesto "ingenuo" de **independencia condicional** entre los atributos, dada la clase:
+
+$$P(x_i \mid c, x_1, \dots, x_{i-1}, x_{i+1}, \dots, x_n) = P(x_i \mid c)$$
+
+Es decir, se asume que, conocida la clase $c$, cada atributo $x_i$ aporta información de manera independiente de los demás atributos. Bajo este supuesto, la probabilidad conjunta se simplifica en un producto de probabilidades individuales:
+
+$$P(c \mid x_1, \dots, x_n) = \frac{P(c) \cdot \prod_{i=1}^{n} P(x_i \mid c)}{P(x_1, \dots, x_n)}$$
+
+Dado que el denominador $P(x_1,\dots,x_n)$ es una constante que no depende de la clase $c$ (es la misma para todas las clases que se comparan), puede eliminarse de la fórmula sin afectar la comparación relativa entre clases:
+
+$$P(c \mid x_1, \dots, x_n) \; \propto \; P(c) \cdot \prod_{i=1}^{n} P(x_i \mid c)$$
+
+## 3.4 Algoritmo de clasificación
+
+El algoritmo de clasificación Naive Bayes se resume en dos pasos:
+
+**Paso 1.** Para cada clase $c_j$, calcular el valor (proporcional a la probabilidad posterior):
+
+$$P(c_j \mid x_1, \dots, x_n) = P(c_j) \cdot \prod_{i=1}^{n} P(x_i \mid c_j)$$
+
+**Paso 2.** Seleccionar la clase con el mayor valor obtenido:
+
+$$\text{Clase predicha} = \arg\max_{c_j} \left[ P(c_j) \cdot \prod_{i=1}^{n} P(x_i \mid c_j) \right]$$
+
+Como el producto de muchas probabilidades pequeñas puede provocar *underflow* numérico, en la práctica se utiliza la versión logarítmica del algoritmo:
+
+$$\text{Clase predicha} = \arg\max_{c_j} \left[ \log P(c_j) + \sum_{i=1}^{n} \log P(x_i \mid c_j) \right]$$
+
+**Estimación de las probabilidades**
+
+- La probabilidad *a priori* $P(c)$ se estima como la frecuencia relativa de la clase en el conjunto de entrenamiento:
+
+$$P(c) = \frac{n_c}{N}$$
+
+donde $n_c$ es el número de registros de la clase $c$ y $N$ el total de registros de entrenamiento.
+
+- La forma de estimar la verosimilitud $P(x_i \mid c)$ depende del tipo de atributo:
+  - Si los atributos son **discretos**, se estima contando frecuencias.
+  - Si los atributos son **continuos** (como en el conjunto Iris), se asume que cada atributo se distribuye de forma normal dentro de cada clase:
+
+$$x_i \mid c \sim N\left(\mu_i^c, (\sigma_i^c)^2\right)$$
+
+y se utiliza la función de densidad gaussiana:
+
+$$P(x_i \mid c) = \phi\left(x_i; \mu_i^c, (\sigma_i^c)^2\right) = \frac{1}{\sqrt{2\pi}\,\sigma_i^c} \exp\left(-\frac{(x_i - \mu_i^c)^2}{2(\sigma_i^c)^2}\right)$$
+
+Esta última variante es la que utiliza el paquete `e1071` de R cuando los predictores son numéricos, como ocurre con el conjunto de datos Iris.
+
+# 4. Conjunto de datos Iris
+
+## Descripción
+
+El conjunto de datos **Iris**, publicado originalmente por Ronald Fisher en 1936, es uno de los conjuntos de datos más utilizados en estadística y aprendizaje automático como caso de referencia para problemas de clasificación. Contiene 150 observaciones de flores del género *Iris*, distribuidas en tres especies, con 50 observaciones por especie.
+
+## Variables
+
+El conjunto contiene cuatro variables predictoras numéricas (medidas en centímetros) y una variable de clase:
+
+| Variable     | Tipo               | Descripción                    |
+|--------------|--------------------|--------------------------------|
+| Sepal.Length | Numérica           | Longitud del sépalo            |
+| Sepal.Width  | Numérica           | Ancho del sépalo               |
+| Petal.Length | Numérica           | Longitud del pétalo            |
+| Petal.Width  | Numérica           | Ancho del pétalo               |
+| Species      | Categórica (clase) | Especie de la flor (3 niveles) |
+
+Al ser todas las variables predictoras numéricas y continuas, el clasificador Naive Bayes las modela mediante la distribución normal (gaussiana) descrita en la sección 3.4.
+
+## Especies
+
+Las tres especies (clases) presentes en el conjunto de datos son:
+
+- *Iris setosa*
+- *Iris versicolor*
+- *Iris virginica*
+
+A continuación se muestra una visualización de la separación entre especies utilizando dos de las variables más discriminantes: longitud y ancho del pétalo.
+
+```{r vis-iris, fig.width=6, fig.height=4, fig.align='center'}
+library(ggplot2)
+data(iris)
+
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species)) +
+  geom_point(size = 2) +
+  labs(title = "Distribución de especies según pétalo",
+       x = "Longitud del pétalo (cm)",
+       y = "Ancho del pétalo (cm)") +
+  theme_minimal()
+```
+
+Como se observa, *setosa* se separa claramente de las otras dos especies, mientras que *versicolor* y *virginica* presentan cierto traslape, lo cual anticipa que el modelo podría confundir ocasionalmente estas dos últimas clases.
+
+# 5. Implementación en R
+
+## Librerías
+
+Se utilizan tres paquetes principales: `e1071` (contiene la función `naiveBayes`), `caret` (para partición de datos y evaluación del modelo) y `ggplot2` (para visualización).
+
+```{r librerias}
+library(e1071)
+library(caret)
+library(ggplot2)
+```
+
+## Carga del dataset
+
+El conjunto de datos Iris viene incluido de forma nativa en R.
+
+```{r carga-datos}
+data(iris)
+str(iris)
+```
+
+## División entrenamiento/prueba
+
+Se utiliza `createDataPartition` del paquete `caret` para dividir el conjunto de datos en 70% para entrenamiento y 30% para prueba, manteniendo la proporción de clases. Se fija una semilla para garantizar la reproducibilidad de los resultados.
+
+```{r particion}
+set.seed(123)
+
+train_index <- createDataPartition(iris$Species, p = 0.7, list = FALSE)
+
+train_data <- iris[train_index, ]
+test_data  <- iris[-train_index, ]
+
+dim(train_data)
+dim(test_data)
+```
+
+## Entrenamiento
+
+El modelo se entrena con la función `naiveBayes()`, utilizando la fórmula `Species ~ .`, la cual indica que se desea predecir la variable `Species` a partir de todas las demás variables del conjunto de datos.
+
+```{r entrenamiento}
+modelo_nb <- naiveBayes(Species ~ ., data = train_data)
+modelo_nb
+```
+
+## Predicciones
+
+Con el modelo ya entrenado, se generan las predicciones sobre el conjunto de prueba:
+
+```{r predicciones}
+predicciones <- predict(modelo_nb, test_data)
+predicciones
+```
+
+Comparando contra los valores reales:
+
+```{r valores-reales}
+test_data$Species
+```
+
+También se pueden clasificar observaciones completamente nuevas, no vistas antes por el modelo:
+
+```{r nuevos-datos}
+nuevos_datos <- data.frame(
+  Sepal.Length = c(5.1, 6.7, 5.8),
+  Sepal.Width  = c(3.5, 3.0, 2.7),
+  Petal.Length = c(1.4, 5.2, 4.2),
+  Petal.Width  = c(0.2, 2.3, 1.3)
+)
+
+nuevas_predicciones <- predict(modelo_nb, nuevos_datos)
+nuevas_predicciones
+```
+
+## Probabilidades
+
+Además de la clase predicha, es posible obtener la probabilidad posterior calculada por el modelo para cada clase, usando el argumento `type = "raw"`:
+
+```{r probabilidades}
+probabilidades <- predict(modelo_nb, nuevos_datos, type = "raw")
+probabilidades
+```
+
+Estos valores corresponden directamente a $P(c_j \mid x_1,\dots,x_n)$ calculada (de forma normalizada) para cada una de las tres clases, tal como se describió en la sección 3.4.
+
+# 6. Resultados
+
+## Predicciones
+
+La siguiente tabla compara, para cada observación del conjunto de prueba, la clase predicha por el modelo contra la clase real:
+
+```{r tabla-comparacion}
+comparacion <- data.frame(
+  Real = test_data$Species,
+  Predicho = predicciones
+)
+head(comparacion, 10)
+```
+
+## Matriz de confusión
+
+La matriz de confusión permite visualizar de forma detallada los aciertos y errores del modelo para cada clase:
+
+```{r matriz-confusion}
+matriz_confusion <- confusionMatrix(predicciones, test_data$Species)
+matriz_confusion
+```
+
+De la matriz se observa que la especie *setosa* es clasificada correctamente en el 100% de los casos, dado que es linealmente separable de las otras dos especies (como se vio en la gráfica de la sección 4). Los pocos errores del modelo se concentran entre *versicolor* y *virginica*, que presentan mayor traslape en sus características.
+
+## Accuracy
+
+La exactitud global (*accuracy*) del modelo, es decir, la proporción de predicciones correctas sobre el total de observaciones de prueba, se puede extraer directamente del objeto de la matriz de confusión:
+
+```{r accuracy}
+accuracy <- matriz_confusion$overall["Accuracy"]
+accuracy
+```
+
+Este valor indica que el modelo Naive Bayes clasifica correctamente a la gran mayoría de las flores del conjunto de prueba, con un desempeño consistente con lo esperado dado el conocido buen ajuste de este algoritmo al conjunto de datos Iris.
+
+# 7. Conclusiones
+
+- El clasificador Naive Bayes, a pesar de basarse en el supuesto "ingenuo" de independencia entre atributos, obtiene un desempeño muy alto sobre el conjunto de datos Iris, con una exactitud superior al 90%.
+- La mayoría de los errores del modelo se concentran entre las especies *versicolor* y *virginica*, cuyas características morfológicas se traslapan parcialmente, mientras que *setosa* es identificada sin error alguno por ser claramente separable.
+- El uso de la distribución normal (gaussiana) para modelar las variables continuas resultó adecuado para este conjunto de datos, lo cual confirma que, aunque el supuesto de independencia no se cumple de manera estricta entre las variables del pétalo y del sépalo, el modelo sigue siendo robusto y útil en la práctica.
+- El paquete `e1071` de R facilita enormemente la implementación del algoritmo, permitiendo entrenar, predecir y obtener probabilidades posteriores con muy pocas líneas de código.
+- Naive Bayes resulta ser una alternativa simple, rápida y eficaz frente a otros algoritmos de clasificación más complejos, especialmente en problemas con conjuntos de datos pequeños o de baja dimensionalidad, como es el caso de Iris.
+
+# 8. Referencias
+
+- Flores Hernández, J. A. (JAFH). *Naive Bayes* [Presentación de clase].
+- Departamento de Ciencia e Ingeniería de la Información (2023). *Métodos de Clasificación: Naive Bayes*. Universidad Politécnica de Madrid. Recuperado de: <https://dcain.etsin.upm.es/~carlos/bookAA/02.1_MetodosdeClasificacion-Naive-Bayes.html>
+- Meyer, D., Dimitriadou, E., Hornik, K., Weingessel, A., & Leisch, F. *e1071: Misc Functions of the Department of Statistics, Probability Theory Group*. Paquete de R.
+- Kuhn, M. *caret: Classification and Regression Training*. Paquete de R.
+- Fisher, R. A. (1936). *The use of multiple measurements in taxonomic problems*. Annals of Eugenics, 7(2), 179-188.
