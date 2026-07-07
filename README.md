@@ -1,4 +1,4 @@
-Integrantes del equipo 
+Integrantes del equipo    
 Nombre: **Gabriel Ernesto Gonzalez Palomo**
 Matricula: 190468,  
 Nombre: **Rosendo Maximiliano Rodríguez Alvarado**
