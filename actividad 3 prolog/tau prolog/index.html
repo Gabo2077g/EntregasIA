@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema experto - Asignación de proyectos</title>
+
+    <!-- Librería Tau-Prolog -->
+    <script src="https://cdn.jsdelivr.net/npm/tau-prolog@0.3.4/modules/core.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 30px;
+        }
+
+        h1 {
+            color: #222;
+        }
+
+        .contenedor {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: auto;
+            box-shadow: 0 0 10px #ccc;
+        }
+
+        button, select {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #888;
+        }
+
+        button {
+            cursor: pointer;
+            background: #2f6fed;
+            color: white;
+            border: none;
+        }
+
+        button:hover {
+            background: #174fb3;
+        }
+
+        pre {
+            background: #111;
+            color: #00ff88;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 200px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+<div class="contenedor">
+    <h1>Sistema experto para asignación de proyectos de software</h1>
+
+    <p>
+        Selecciona una opción para consultar la base de conocimientos.
+    </p>
+
+    <button onclick="listarDesarrolladores()">Listar desarrolladores</button>
+    <button onclick="listarProyectos()">Listar proyectos</button>
+
+    <br><br>
+
+    <label for="proyecto">Proyecto:</label>
+    <select id="proyecto">
+        <option value="proyecto_a">Proyecto A</option>
+        <option value="proyecto_b">Proyecto B</option>
+        <option value="proyecto_c">Proyecto C</option>
+        <option value="proyecto_d">Proyecto D</option>
+        <option value="proyecto_e">Proyecto E</option>
+        <option value="proyecto_f">Proyecto F</option>
+        <option value="proyecto_g">Proyecto G</option>
+        <option value="proyecto_h">Proyecto H</option>
+        <option value="proyecto_i">Proyecto I</option>
+        <option value="proyecto_j">Proyecto J</option>
+    </select>
+
+    <button onclick="verificarPersonal()">Verificar personal necesario</button>
+    <button onclick="verFaltantes()">Ver qué falta contratar</button>
+    <button onclick="verAsignacion()">Sugerir asignación</button>
+
+    <h3>Resultado:</h3>
+    <pre id="salida">Cargando sistema experto...</pre>
+</div>
+
+<script>
+    /*
+        SISTEMA EXPERTO EN PROLOG
+
+        Niveles de programador:
+        - junior
+        - avanzado
+        - senior
+
+        Niveles de proyecto:
+        - bajo
+        - medio
+        - alto
+        - muy_alto
+    */
+
+    const programa = `
+
+        % ==========================================
+        % BASE DE CONOCIMIENTOS
+        % ==========================================
+
+        % desarrollador(Nombre, Nivel).
+        desarrollador(ana, junior).
+        desarrollador(luis, junior).
+        desarrollador(sofia, junior).
+        desarrollador(carlos, junior).
+        desarrollador(maria, junior).
+        desarrollador(pedro, avanzado).
+        desarrollador(laura, senior).
+        desarrollador(diego, senior).
+        desarrollador(elena, senior).
+        desarrollador(ricardo, senior).
+
+        % proyecto(Nombre, Nivel).
+        proyecto(proyecto_a, bajo).
+        proyecto(proyecto_b, bajo).
+        proyecto(proyecto_c, medio).
+        proyecto(proyecto_d, medio).
+        proyecto(proyecto_e, alto).
+        proyecto(proyecto_f, alto).
+        proyecto(proyecto_g, muy_alto).
+        proyecto(proyecto_h, muy_alto).
+        proyecto(proyecto_i, medio).
+        proyecto(proyecto_j, bajo).
+
+        % Niveles posibles de programadores.
+        nivel_programador(junior).
+        nivel_programador(avanzado).
+        nivel_programador(senior).
+
+        % ==========================================
+        % REQUERIMIENTOS SEGÚN NIVEL DEL PROYECTO
+        % ==========================================
+
+        % requerimiento(NivelProyecto, NivelProgramador, Cantidad).
+
+        % Proyecto bajo:
+        % requiere 1 avanzado y 1 junior.
+        requerimiento(bajo, avanzado, 1).
+        requerimiento(bajo, junior, 1).
+
+        % Proyecto medio:
+        % requiere 1 senior y 1 avanzado.
+        requerimiento(medio, senior, 1).
+        requerimiento(medio, avanzado, 1).
+
+        % Proyecto alto:
+        % requiere 1 senior, 1 avanzado y 1 junior.
+        requerimiento(alto, senior, 1).
+        requerimiento(alto, avanzado, 1).
+        requerimiento(alto, junior, 1).
+
+        % Proyecto muy alto:
+        % requiere 1 senior, 2 avanzados y 2 junior.
+        requerimiento(muy_alto, senior, 1).
+        requerimiento(muy_alto, avanzado, 2).
+        requerimiento(muy_alto, junior, 2).
+
+        % ==========================================
+        % REGLAS DEL SISTEMA EXPERTO
+        % ==========================================
+
+        % Cuenta cuántos elementos tiene una lista.
+        contar_lista([], 0).
+        contar_lista([_|Resto], Cantidad) :-
+            contar_lista(Resto, CantidadResto),
+            Cantidad is CantidadResto + 1.
+
+        % Obtiene todos los desarrolladores de un nivel.
+        personal_por_nivel(Nivel, Lista) :-
+            findall(Nombre, desarrollador(Nombre, Nivel), Lista).
+
+        % Cuenta cuántos desarrolladores hay disponibles por nivel.
+        cantidad_disponible(Nivel, Cantidad) :-
+            personal_por_nivel(Nivel, Lista),
+            contar_lista(Lista, Cantidad).
+
+        % Obtiene cuántos programadores de cierto nivel requiere un proyecto.
+        requeridos_por_proyecto(Proyecto, NivelProgramador, Cantidad) :-
+            proyecto(Proyecto, NivelProyecto),
+            requerimiento(NivelProyecto, NivelProgramador, Cantidad).
+
+        % Si un proyecto no requiere cierto nivel, la cantidad requerida es 0.
+        requeridos_por_proyecto(Proyecto, NivelProgramador, 0) :-
+            proyecto(Proyecto, NivelProyecto),
+            nivel_programador(NivelProgramador),
+            \\+ requerimiento(NivelProyecto, NivelProgramador, _).
+
+        % Determina si existe personal suficiente para un proyecto.
+        personal_suficiente(Proyecto) :-
+            proyecto(Proyecto, NivelProyecto),
+            \\+ (
+                requerimiento(NivelProyecto, NivelProgramador, CantidadRequerida),
+                cantidad_disponible(NivelProgramador, CantidadDisponible),
+                CantidadDisponible < CantidadRequerida
+            ).
+
+        % Indica qué tipo de personal hace falta contratar.
+        falta_contratar(Proyecto, NivelProgramador, Faltan) :-
+            requeridos_por_proyecto(Proyecto, NivelProgramador, CantidadRequerida),
+            cantidad_disponible(NivelProgramador, CantidadDisponible),
+            CantidadRequerida > CantidadDisponible,
+            Faltan is CantidadRequerida - CantidadDisponible.
+
+        % Si sí hay personal suficiente, no hace falta contratar.
+        falta_contratar(Proyecto, ninguno, 0) :-
+            personal_suficiente(Proyecto).
+
+        % Selecciona los primeros N elementos de una lista.
+        primeros(0, _, []).
+        primeros(N, [X|Resto], [X|Seleccionados]) :-
+            N > 0,
+            N1 is N - 1,
+            primeros(N1, Resto, Seleccionados).
+
+        % Sugiere personal de cierto nivel para un proyecto.
+        asignacion_nivel(Proyecto, NivelProgramador, Personal) :-
+            requeridos_por_proyecto(Proyecto, NivelProgramador, Cantidad),
+            personal_por_nivel(NivelProgramador, Lista),
+            primeros(Cantidad, Lista, Personal).
+
+        % Sugiere una asignación completa para un proyecto si hay personal suficiente.
+        asignacion_proyecto(Proyecto, Seniors, Avanzados, Juniors) :-
+            personal_suficiente(Proyecto),
+            asignacion_nivel(Proyecto, senior, Seniors),
+            asignacion_nivel(Proyecto, avanzado, Avanzados),
+            asignacion_nivel(Proyecto, junior, Juniors).
+
+    `;
+
+    const session = pl.create(10000);
+    let sistemaCargado = false;
+
+    session.consult(programa, {
+        success: function() {
+            sistemaCargado = true;
+            document.getElementById("salida").textContent =
+                "Sistema experto cargado correctamente.";
+        },
+        error: function(error) {
+            document.getElementById("salida").textContent =
+                "Error al cargar el sistema experto:\\n" + error;
+        }
+    });
+
+    function ejecutarConsulta(consulta) {
+        return new Promise((resolve, reject) => {
+            if (!sistemaCargado) {
+                reject("El sistema experto todavía no se ha cargado.");
+                return;
+            }
+
+            session.query(consulta, {
+                success: function() {
+                    const respuestas = [];
+
+                    function obtenerRespuesta() {
+                        session.answer({
+                            success: function(answer) {
+                                respuestas.push(session.format_answer(answer));
+                                obtenerRespuesta();
+                            },
+                            fail: function() {
+                                resolve(respuestas);
+                            },
+                            error: function(error) {
+                                reject(error);
+                            },
+                            limit: function() {
+                                reject("Se alcanzó el límite de inferencias.");
+                            }
+                        });
+                    }
+
+                    obtenerRespuesta();
+                },
+                error: function(error) {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    async function listarDesarrolladores() {
+    try {
+        const respuestas = await ejecutarConsulta("desarrollador(Nombre, Nivel).");
+
+        document.getElementById("salida").textContent =
+            "Lista de desarrolladores con sus niveles:\n\n" +
+            respuestas.join("\n");
+    } catch (error) {
+        document.getElementById("salida").textContent = "Error:\n" + error;
+    }
+}
+
+async function listarProyectos() {
+    try {
+        const respuestas = await ejecutarConsulta("proyecto(Proyecto, Nivel).");
+
+        document.getElementById("salida").textContent =
+            "Lista de proyectos con sus niveles:\n\n" +
+            respuestas.join("\n");
+    } catch (error) {
+        document.getElementById("salida").textContent = "Error:\n" + error;
+    }
+}
+
+async function verificarPersonal() {
+    try {
+        const proyecto = document.getElementById("proyecto").value;
+        const respuestas = await ejecutarConsulta("personal_suficiente(" + proyecto + ").");
+
+        if (respuestas.length > 0) {
+            document.getElementById("salida").textContent =
+                "Sí hay personal suficiente para " + proyecto + ".";
+        } else {
+            document.getElementById("salida").textContent =
+                "No hay personal suficiente para " + proyecto + ".";
+        }
+    } catch (error) {
+        document.getElementById("salida").textContent = "Error:\n" + error;
+    }
+}
+
+async function verFaltantes() {
+    try {
+        const proyecto = document.getElementById("proyecto").value;
+        const respuestas = await ejecutarConsulta(
+            "falta_contratar(" + proyecto + ", Nivel, Cantidad)."
+        );
+
+        document.getElementById("salida").textContent =
+            "Personal que hace falta contratar para " + proyecto + ":\n\n" +
+            respuestas.join("\n");
+    } catch (error) {
+        document.getElementById("salida").textContent = "Error:\n" + error;
+    }
+}
+
+async function verAsignacion() {
+    try {
+        const proyecto = document.getElementById("proyecto").value;
+        const respuestas = await ejecutarConsulta(
+            "asignacion_proyecto(" + proyecto + ", Seniors, Avanzados, Juniors)."
+        );
+
+        if (respuestas.length > 0) {
+            document.getElementById("salida").textContent =
+                "Asignación sugerida para " + proyecto + ":\n\n" +
+                respuestas.join("\n");
+        } else {
+            document.getElementById("salida").textContent =
+                "No se puede sugerir asignación porque no hay personal suficiente para " + proyecto + ".";
+        }
+    } catch (error) {
+        document.getElementById("salida").textContent = "Error:\n" + error;
+    }
+}
+</script>
+
+</body>
+</html>
