@@ -5,8 +5,8 @@
 - Nombre: Rosendo Maximiliano Rodríguez Alvarado
 - Matrícula: 190254
 - Nombre: Carlos Rafael Mendez Gonzalez
-- Matrícula: 191209
-Profesor: Jesus Alejandro Flores Hernandez
+- Matrícula: 191209,   
+Profesor: Jesus Alejandro Flores Hernandez    
 Lenguaje utilizado: Tau-Prolog con JavaScript
 
 # Sistema Experto para Asignación de Proyectos de Software
